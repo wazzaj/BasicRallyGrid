@@ -16,27 +16,50 @@ Ext.define('CustomApp', {
                 },
             scope: this
             },
-        fetch: ['formattedID', 'ObjectID', 'Name']
+        fetch: ['FormattedID','ObjectID', 'Name']
         });  
     },
 
     _processPortfolioItems: function(itemStore) {
         itemStore.each(function(record) {
             var item = record.get('ObjectID');
-            this._getPointsData(item,'2016-01-22TZ');
-            this._getPointsData(item,'2016-01-30TZ');
+            this._getPointsDifference(item,'2016-01-22TZ','2016-01-30TZ');
         },this);
         this._loadGrid(itemStore);
     },
 
-    _getPointsData: function(objid, piDate) {
-        var pointsStore = Ext.create('Rally.data.lookback.SnapshotStore', {
+    _getPointsDifference: function(objid, startDate, endDate) {
+        var startStore = Ext.create('Rally.data.lookback.SnapshotStore', {
             autoLoad: true,
             listeners: {
-                load: function(pointsStore, pointsData, success) {
-                    pointsStore.each(function (record) {
-                        console.log(record.get('Name'), record.get('AcceptedLeafStoryPlanEstimateTotal'));
-                    });             
+                load: function(startStore, startData, success) {
+                    startStore.each(function(record) {
+                        var startPoints = record.get('AcceptedLeafStoryPlanEstimateTotal'); 
+
+                        var endStore = Ext.create('Rally.data.lookback.SnapshotStore', {
+                            autoLoad: true,
+                            listeners: {
+                                load: function(endStore, endData, success) {
+                                    endStore.each(function(record) {
+                                        var totalPoints = record.get('AcceptedLeafStoryPlanEstimateTotal') - startPoints;
+                                        console.log(record.get('Name'), 'total points = ', totalPoints);
+                                    },this);
+                                }
+                            },
+                            fetch: ['Name', 'AcceptedLeafStoryPlanEstimateTotal'],
+                            filters: [
+                                {
+                                    property: 'ObjectID',
+                                    operator: '=',
+                                    value: objid
+                                },
+                                {
+                                    property: '__At',
+                                    value: endDate
+                                }
+                            ]
+                        });
+                    },this);
                 }
             },
             fetch: ['Name', 'AcceptedLeafStoryPlanEstimateTotal'],
@@ -48,7 +71,7 @@ Ext.define('CustomApp', {
                 },
                 {
                     property: '__At',
-                    value: piDate
+                    value: startDate
                 }
             ]
         });
