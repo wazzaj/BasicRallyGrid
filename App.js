@@ -2,20 +2,39 @@ Ext.define('CustomApp', {
     extend: 'Rally.app.App',
     componentCls: 'app',
     launch: function() {
+
+        this.pulldownContainer = Ext.create('Ext.container.Container', {
+            layout: {
+                type: 'hbox',
+                align: 'stretch'
+            }
+        });
+
+        this.add(this.pulldownContainer);
+
         this._getPortfolioType();
         this._setStartDate();
         this._setEndDate();
-        this._loadData();
+//        this._loadData();
     },
 
     _getPortfolioType: function() {
+
         var piTypeField = Ext.create('Ext.Container', {
             items: [{
-                xtype: 'rallyportfolioitemtypecombobox'
+                xtype: 'rallyportfolioitemtypecombobox',
+                fieldLabel: 'Item Type',
+                listeners: {
+                    change: function(x, newvalue, oldvalue, object) {
+                        this.piType = x.getRecord().get('Name');
+                        this._loadData();
+                        },
+                    scope: this    
+                    }
                 }],
             renderTo: Ext.getBody().dom
         });
-        this.add(piTypeField);
+        this.pulldownContainer.add(piTypeField);
     },
 
     _setStartDate: function() {
@@ -27,7 +46,6 @@ Ext.define('CustomApp', {
                 fieldLabel: 'Start Date',
                 listeners: {
                     change: function(x, newvalue, oldvalue, object) {
-                        console.log(newvalue, oldvalue, object);
                         this.startdate = newvalue;
                         this._loadData();
                         },
@@ -39,7 +57,7 @@ Ext.define('CustomApp', {
             renderTo: Ext.getBody().dom
         });
 
-        this.add(startDateField);
+        this.pulldownContainer.add(startDateField);
     },
 
     _setEndDate: function() {
@@ -51,7 +69,6 @@ Ext.define('CustomApp', {
                 fieldLabel: 'End Date',
                 listeners: {
                     change: function(x, newvalue, oldvalue, object) {
-                        console.log(newvalue, oldvalue, object);
                         this.endDate = newvalue;
                         this._loadData();
                         },
@@ -63,33 +80,43 @@ Ext.define('CustomApp', {
             renderTo: Ext.getBody().dom
         });
 
-        this.add(endDateField);
+        this.pulldownContainer.add(endDateField);
     },
 
     _loadData: function() {
+        var myFilters = [
+            {
+                property: 'PortfolioItemType.Name',
+                operator: '=',
+                value: this.piType
+            }
+        ];    
 
-        var myStore = Ext.create('Rally.data.wsapi.Store', {
-            model: 'Portfolio Item/Initiative',
-            autoLoad: true,
-            listeners: {
-                load: function(myStore, myData, success) {
-                    this._processPortfolioItems(myStore);
+        if(this.itemStore) {
+            this.itemStore.setFilter(myFilters);
+            this.itemStore.load();
+        } else {
+            this.itemStore = Ext.create('Rally.data.wsapi.Store', {
+                model: 'Portfolio Item',
+                autoLoad: true,
+                filters: myFilters,
+                listeners: {
+                    load: function(myStore, myData, success) {
+                        this._processPortfolioItems();
+                    },
+                    scope: this    
                 },
-            scope: this
-            },
-        fetch: ['FormattedID','ObjectID', 'Name']
-        });  
+                fetch: ['FormattedID','ObjectID', 'Name', 'PortfolioItemType']
+            });
+        }      
     },
 
-    _processPortfolioItems: function(itemStore) {
-        itemStore.each(function(record) {
+    _processPortfolioItems: function() {
+        this.itemStore.each(function(record) {
             var item = record.get('ObjectID');
-            console.log('Start Date is: ', this.startDate);
-            console.log('End Date is: ', this.endDate);
-
             this._getPointsDifference(item,this.startDate, this.endDate);
         },this);
-        this._loadGrid(itemStore);
+        this._createGrid();
     },
 
     _getPointsDifference: function(objid, startDate, endDate) {
@@ -141,15 +168,18 @@ Ext.define('CustomApp', {
         });
     },
 
-    _loadGrid: function(myPIStore) {
-        var myGrid = Ext.create('Rally.ui.grid.Grid', {
-            store: myPIStore,
-            columnCfgs: [
-                'FormattedID', 'ObjectID', 'Name'
-            ]
-        });
+    _createGrid: function() {
 
-        this.add(myGrid);
+        if(!this.myGrid) {
+            this.myGrid = Ext.create('Rally.ui.grid.Grid', {
+                store: this.itemStore,
+                columnCfgs: [
+                    'FormattedID', 'Name', 'PortfolioItemType'
+                ]
+            });
+
+        this.add(this.myGrid);
+        }
     }
 
 //    _createArrayStoreFromRecords : function(records) {
