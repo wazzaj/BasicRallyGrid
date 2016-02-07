@@ -2,7 +2,6 @@ Ext.define('CustomApp', {
     extend: 'Rally.app.App',
     componentCls: 'app',
     launch: function() {
-
         this.pulldownContainer = Ext.create('Ext.container.Container', {
             layout: {
                 type: 'hbox',
@@ -15,7 +14,6 @@ Ext.define('CustomApp', {
         this._getPortfolioType();
         this._setStartDate();
         this._setEndDate();
-//        this._loadData();
     },
 
     _getPortfolioType: function() {
@@ -112,58 +110,49 @@ Ext.define('CustomApp', {
     },
 
     _processPortfolioItems: function() {
+//        this._createArrayStore();
+
         this.itemStore.each(function(record) {
             var item = record.get('ObjectID');
-            this._getPointsDifference(item,this.startDate, this.endDate);
+            var id = record.get('FormattedID');
+            var name = record.get('Name');
+
+            this._getPointsDifference(item,this.startDate).then({
+                scope: this,
+                success: function(startPoints) {
+                    this._getPointsDifference(item,this.endDate).then({
+                        scope: this,
+                        success: function(endPoints) {
+                            var totalPoints = endPoints - startPoints;
+                            console.log(id, name, endPoints);
+//                            this.newPointsStore.add({FormattedID:id, Name:name, Points:totalPoints});
+                        },
+                        failure: function(error) {
+                            console.log("Error 2");
+                        }
+                    });
+                },
+                failure: function(error) {
+                    console.log("Error");
+                }    
+            });            
         },this);
-        this._createGrid();
+
+        this._createPointsGrid();
     },
 
-    _getPointsDifference: function(objid, startDate, endDate) {
-        this._createArrayStore();
+    _getPointsDifference: function(objid, uDate) {
+        var deferred = Ext.create('Deft.Deferred');
 
-        var scope1 = this;
-
-        var startStore = Ext.create('Rally.data.lookback.SnapshotStore', {
+        var uStore = Ext.create('Rally.data.lookback.SnapshotStore', {
             autoLoad: true,
             listeners: {
-                load: function(startStore, startData, success) {
-                    var scope2 = scope1;
-//                    console.log('1:',this.piType);
-                    startStore.each(function(record) {
-//                        console.log('2:',this.piType);
-                        var scope3 = scope2;
-                        var startPoints = record.get('AcceptedLeafStoryPlanEstimateTotal'); 
-
-                        var endStore = Ext.create('Rally.data.lookback.SnapshotStore', {
-                            autoLoad: true,
-                            listeners: {
-                                load: function(endStore, endData, success) {
-//                                    console.log('3:',this.piType);
-                                    endStore.each(function(record) {
-                                        var itemName = record.get('Name');
-                                        var totalPoints = record.get('AcceptedLeafStoryPlanEstimateTotal') - startPoints;
-                                        console.log(itemName, 'total points = ', totalPoints);
-                                        this._addRecordToArrayStore(itemName, totalPoints);
-                                    },scope3);
-//                                    console.log(this.pointsStore);
-                                    scope2._createPointsGrid();
-                                }
-                            },
-                            fetch: ['Name', 'AcceptedLeafStoryPlanEstimateTotal'],
-                            filters: [
-                                {
-                                    property: 'ObjectID',
-                                    operator: '=',
-                                    value: objid
-                                },
-                                {
-                                    property: '__At',
-                                    value: endDate
-                                }
-                            ]
-                        });
-                    },scope1);
+                scope: this,
+                load: function(uStore, uData, success) {
+                    uStore.each(function(record) {
+                        var points = record.get('AcceptedLeafStoryPlanEstimateTotal'); 
+                        deferred.resolve(points);
+                    },this);
                 }
             },
             fetch: ['Name', 'AcceptedLeafStoryPlanEstimateTotal'],
@@ -175,92 +164,51 @@ Ext.define('CustomApp', {
                 },
                 {
                     property: '__At',
-                    value: startDate
+                    value: uDate
                 }
             ]
         });
+
+        return deferred.promise;
     },
 
-    _createGrid: function() {
+    _createArrayStore: function() {
 
-        if(!this.myGrid) {
-            this.myGrid = Ext.create('Rally.ui.grid.Grid', {
-                store: this.itemStore,
-                columnCfgs: [
-                    'FormattedID', 'Name', 'PortfolioItemType'
+        if (newPointsStore) {
+            newPointsStore.removeAll();
+        } else {
+            this.newPointsStore = new Ext.data.ArrayStore({
+                fields: [
+                    'FormattedID',
+                    'Name',
+                    'Points'
                 ]
             });
-
-        this.add(this.myGrid);
-        }
+        }    
     },
 
     _createPointsGrid: function() {
+        console.log("Create Points Grid");
 
-        if(!this.pointsGrid) {
-            this.pointsGrid = Ext.create('Rally.ui.grid.Grid', {
-                store: this.pointsStore,
-                columnCfgs: [
-                    'Name', 'Points'
-                ]
-            });
+//        if(!this.pointsGrid) {
+//            Ext.define('itemPointsModel', {
+//                extend: 'Ext.data.Model',
+//                fields: [
+//                    {displayName: 'ID',     name: 'ID',     type: 'string'},       
+//                    {displayName: 'Name',   name: 'Name',   type: 'string'},
+//                    {displayName: 'Points', name: 'Points', type: 'int'}
+//                ]
+//            });
 
-        this.add(this.pointsGrid);
-        }
-    },
-    
-    _addRecordToArrayStore: function(n, p) {
-        console.log('Add Record', n, p);
+//            this.pointsGrid = Ext.create('Rally.ui.grid.Grid', {
+//                store: this.newpointsStore,
+//                model: itemPointsModel,
+//                columnCfgs: [
+//                    'FormattedID', 'Name', 'Points'
+//                ]
+//            });
 
-        var data = _.map(n, p, function(name, points) {
-        return {
-            "Name" : name,
-            "Points" : points
-            };
-        });          
-
-        console.log(data);
-
-//        var data = new this.pointsRecord({
-//            name: n,
-//            points: p
-//        });
-
-//        this.pointsStore.add(data);
-    },
-    
-    _createArrayStore: function() {
-
-        if(!this.pointsStore) {
-
-//            this.pointsRecord = Ext.data.Record.create([
-//                {name: "Name", type: "string"},
-//                {name: "Points", type: "integer"}
-//            ]);    
-
-            var fields = [
-                {displayName: 'Name',   name: 'Name',   type: 'string'},
-                {displayName: 'Points', name: 'Points', type: 'integer'}
-            ];
-
-            this.pointsStore = Ext.create('Ext.data.JsonStore', {
-                fields: fields
-//                data : data
-            });
-        }
+//        this.add(this.pointsGrid);
+//        }
     }
-
-
-// convert records into a json data structure
-//    var data = _.map(records,function(r) {
-//        return {
-//            "FormattedID" :               
-//                r.get("ItemObject").get("FormattedID"),
-//            "Name" :      
-//                r.get("PointsObject").get("Name"),
-//            "Points" :   
-//                r.get("PointsObject").get("Points")
-//        };
-//    });
-//    }
 });
