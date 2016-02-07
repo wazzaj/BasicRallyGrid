@@ -120,21 +120,34 @@ Ext.define('CustomApp', {
     },
 
     _getPointsDifference: function(objid, startDate, endDate) {
+        this._createArrayStore();
+
+        var scope1 = this;
+
         var startStore = Ext.create('Rally.data.lookback.SnapshotStore', {
             autoLoad: true,
             listeners: {
                 load: function(startStore, startData, success) {
+                    var scope2 = scope1;
+//                    console.log('1:',this.piType);
                     startStore.each(function(record) {
+//                        console.log('2:',this.piType);
+                        var scope3 = scope2;
                         var startPoints = record.get('AcceptedLeafStoryPlanEstimateTotal'); 
 
                         var endStore = Ext.create('Rally.data.lookback.SnapshotStore', {
                             autoLoad: true,
                             listeners: {
                                 load: function(endStore, endData, success) {
+//                                    console.log('3:',this.piType);
                                     endStore.each(function(record) {
+                                        var itemName = record.get('Name');
                                         var totalPoints = record.get('AcceptedLeafStoryPlanEstimateTotal') - startPoints;
-                                        console.log(record.get('Name'), 'total points = ', totalPoints);
-                                    },this);
+                                        console.log(itemName, 'total points = ', totalPoints);
+                                        this._addRecordToArrayStore(itemName, totalPoints);
+                                    },scope3);
+//                                    console.log(this.pointsStore);
+                                    scope2._createPointsGrid();
                                 }
                             },
                             fetch: ['Name', 'AcceptedLeafStoryPlanEstimateTotal'],
@@ -150,7 +163,7 @@ Ext.define('CustomApp', {
                                 }
                             ]
                         });
-                    },this);
+                    },scope1);
                 }
             },
             fetch: ['Name', 'AcceptedLeafStoryPlanEstimateTotal'],
@@ -180,17 +193,65 @@ Ext.define('CustomApp', {
 
         this.add(this.myGrid);
         }
+    },
+
+    _createPointsGrid: function() {
+
+        if(!this.pointsGrid) {
+            this.pointsGrid = Ext.create('Rally.ui.grid.Grid', {
+                store: this.pointsStore,
+                columnCfgs: [
+                    'Name', 'Points'
+                ]
+            });
+
+        this.add(this.pointsGrid);
+        }
+    },
+    
+    _addRecordToArrayStore: function(n, p) {
+        console.log('Add Record', n, p);
+
+        var data = _.map(n, p, function(name, points) {
+        return {
+            "Name" : name,
+            "Points" : points
+            };
+        });          
+
+        console.log(data);
+
+//        var data = new this.pointsRecord({
+//            name: n,
+//            points: p
+//        });
+
+//        this.pointsStore.add(data);
+    },
+    
+    _createArrayStore: function() {
+
+        if(!this.pointsStore) {
+
+//            this.pointsRecord = Ext.data.Record.create([
+//                {name: "Name", type: "string"},
+//                {name: "Points", type: "integer"}
+//            ]);    
+
+            var fields = [
+                {displayName: 'Name',   name: 'Name',   type: 'string'},
+                {displayName: 'Points', name: 'Points', type: 'integer'}
+            ];
+
+            this.pointsStore = Ext.create('Ext.data.JsonStore', {
+                fields: fields
+//                data : data
+            });
+        }
     }
 
-//    _createArrayStoreFromRecords : function(records) {
 
-//    var fields = [
-//        {displayName: 'Formatted ID',   name: 'FormattedID'},
-//        {displayName: 'Name',           name: 'Name'},
-//        {displayName: 'Points',         name: 'Points'}
-//    ];
-
-    // convert records into a json data structure
+// convert records into a json data structure
 //    var data = _.map(records,function(r) {
 //        return {
 //            "FormattedID" :               
@@ -201,29 +262,5 @@ Ext.define('CustomApp', {
 //                r.get("PointsObject").get("Points")
 //        };
 //    });
-
-//        var pistore = Ext.create('Ext.data.JsonStore', {
-//            fields: fields,
-//            data : data
-//        });
-
-//        app.grid = new Ext.grid.GridPanel(
-//            {
-//                header: false,
-//                id : 'tsGrid',
-//                title: 'Portfolio Item Points Report',
-//                features: [
-//                    {ftype: 'grouping',  showSummaryRow: true, groupHeaderTpl: ' {name}'},
-//                    {ftype: 'summary'}
-//                ],
-//                store: pistore,
-//                columns: _.map(fields,function(f){
-//                            text:f.displayName,
-//                            dataIndex:f.name
-//                })
-//            }
-//        );
-
-//        this.add(app.grid);
 //    }
 });
