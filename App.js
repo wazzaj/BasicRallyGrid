@@ -220,8 +220,8 @@ Ext.define('CustomApp', {
 
         if(!this.pieChart) {
             this.pieChart = new Ext.chart.Chart({
-                width: 800,
-                height: 600,
+                width: 400,
+                height: 300,
                 animate: true,
 //                autoSize: true,
 //                autoScroll: true,
