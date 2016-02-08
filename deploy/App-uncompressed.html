@@ -109,18 +109,9 @@
                 filters: myFilters,
                 listeners: {
                     load: function(myStore, myData, success) {
-                        console.log('xxx ', this.piType);
-//                        this._processPortfolioItems().then({
-//                            scope: this,
-//                            success: function() {
-//                                this._createPointsGrid();
-//                            },
-//                            failure: function(error) {
-//                                console.log("error3");
-//                            }    
-//                        });
                         this._processPortfolioItems();
-                        this._createPointsGrid();
+//                        this._createPointsGrid();
+                        this._drawPieChart();
                     },
                     scope: this    
                 },
@@ -130,7 +121,6 @@
     },
 
     _processPortfolioItems: function() {
-//        var deferred = Ext.create('Deft.Deferred');
 
         this._createArrayStore();
 
@@ -146,17 +136,21 @@
                         scope: this,
                         success: function(endPoints) {
                             var totalPoints = endPoints - startPoints;
-                            console.log(id, name, endPoints);
-                            this.newPointsStore.add({FormattedID:id, Name:name, Points:totalPoints});
-                            console.log(this.newPointsStore);
+//                            console.log(id, name, totalPoints);
+                            this.newPointsStore.add({
+                                FormattedID:id, 
+                                Name:name, 
+                                Start: startPoints, 
+                                End: endPoints, 
+                                Points:totalPoints});
                         },
                         failure: function(error) {
-                            console.log("Error 2");
+//                            console.log("Error 2");
                         }
                     });
                 },
                 failure: function(error) {
-                    console.log("Error");
+//                    console.log("Error");
                 }    
             });            
         },this);
@@ -198,13 +192,14 @@
     _createArrayStore: function() {
 
         if (this.newPointsStore) {
-            console.log('Clear records from store');
             this.newPointsStore.removeAll();
         } else {
             this.newPointsStore = new Ext.data.ArrayStore({
                 fields: [
                     'FormattedID',
                     'Name',
+                    'Start',
+                    'End',
                     'Points'
                 ]
             });
@@ -217,16 +212,63 @@
             this.pointsGrid = new Ext.grid.Panel({
                 store: this.newPointsStore,
                 columns: [
-                    {text: 'ID',     dataIndex: 'FormattedID'},       
-                    {text: 'Name',   dataIndex: 'Name',   flex:1},
-                    {text: 'Points', dataIndex: 'Points'}
+                    {text: 'ID',        dataIndex: 'FormattedID'},       
+                    {text: 'Name',      dataIndex: 'Name',   flex:1},
+                    {text: 'Start',     dataIndex: 'Start'},
+                    {text: 'End',       dataIndex: 'End'},
+                    {text: 'Points',    dataIndex: 'Points'}
                 ],
-                title: 'Portfolio Items - Points Completed',
+//                title: 'Portfolio Items - Points Completed',
                 renderTo: Ext.getBody()
                 });
             this.add(this.pointsGrid);
         }
-    }
+    },
+
+    _drawPieChart: function() {
+
+        if(!this.pieChart) {
+            this.pieChart = new Ext.chart.Chart({
+//                width: 800,
+//                height: 600,
+                animate: true,
+                autoSize: true,
+                store: this.newPointsStore,
+                renderTo: Ext.getBody(),
+                shadow: true,
+                autoSize: true,
+                legend: {
+                    position: 'right'
+                },
+                insetPadding: 25,
+                theme: 'Base:gradients',
+                series: [{
+                    type: 'pie',
+                    field: 'Points',
+                    showInLegend: true,
+                    tips: {
+                        trackMouse: true,
+                        width: 300,
+                        height: 28,
+                        renderer: function(storeItem, item) {
+                            this.setTitle(storeItem.get('Name') + ': ' + storeItem.get('Points'));
+                        }
+                    },
+                    highlight: {
+                        segment: {
+                            margin: 20
+                        }
+                    },
+                    label: {
+                        field: 'Name',
+                        display: 'none'
+                    },
+                    animate: true
+                }]
+            });
+            this.add(this.pieChart);
+        }    
+    }    
 });
 
 

@@ -101,7 +101,8 @@ Ext.define('CustomApp', {
                 listeners: {
                     load: function(myStore, myData, success) {
                         this._processPortfolioItems();
-                        this._createPointsGrid();
+//                        this._createPointsGrid();
+                        this._drawPieChart();
                     },
                     scope: this    
                 },
@@ -208,10 +209,54 @@ Ext.define('CustomApp', {
                     {text: 'End',       dataIndex: 'End'},
                     {text: 'Points',    dataIndex: 'Points'}
                 ],
-                title: 'Portfolio Items - Points Completed',
+//                title: 'Portfolio Items - Points Completed',
                 renderTo: Ext.getBody()
                 });
             this.add(this.pointsGrid);
         }
-    }
+    },
+
+    _drawPieChart: function() {
+
+        if(!this.pieChart) {
+            this.pieChart = new Ext.chart.Chart({
+//                width: 800,
+//                height: 600,
+                animate: true,
+                autoSize: true,
+                store: this.newPointsStore,
+                renderTo: Ext.getBody(),
+                shadow: true,
+                legend: {
+                    position: 'right'
+                },
+                insetPadding: 25,
+                theme: 'Base:gradients',
+                series: [{
+                    type: 'pie',
+                    field: 'Points',
+                    showInLegend: true,
+                    tips: {
+                        trackMouse: true,
+                        width: 300,
+                        height: 28,
+                        renderer: function(storeItem, item) {
+                            this.setTitle(storeItem.get('Name') + ': ' + storeItem.get('Points'));
+                        }
+                    },
+                    highlight: {
+                        segment: {
+                            margin: 20
+                        }
+                    },
+                    label: {
+                        field: 'Name',
+                        display: 'none'
+                    },
+                    animate: true
+                }]
+            });
+            this.add(this.pieChart);
+        }    
+    }    
 });
