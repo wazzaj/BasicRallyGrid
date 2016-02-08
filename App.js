@@ -100,16 +100,6 @@ Ext.define('CustomApp', {
                 filters: myFilters,
                 listeners: {
                     load: function(myStore, myData, success) {
-                        console.log('xxx ', this.piType);
-//                        this._processPortfolioItems().then({
-//                            scope: this,
-//                            success: function() {
-//                                this._createPointsGrid();
-//                            },
-//                            failure: function(error) {
-//                                console.log("error3");
-//                            }    
-//                        });
                         this._processPortfolioItems();
                         this._createPointsGrid();
                     },
@@ -121,7 +111,6 @@ Ext.define('CustomApp', {
     },
 
     _processPortfolioItems: function() {
-//        var deferred = Ext.create('Deft.Deferred');
 
         this._createArrayStore();
 
@@ -137,17 +126,21 @@ Ext.define('CustomApp', {
                         scope: this,
                         success: function(endPoints) {
                             var totalPoints = endPoints - startPoints;
-                            console.log(id, name, endPoints);
-                            this.newPointsStore.add({FormattedID:id, Name:name, Points:totalPoints});
-                            console.log(this.newPointsStore);
+//                            console.log(id, name, totalPoints);
+                            this.newPointsStore.add({
+                                FormattedID:id, 
+                                Name:name, 
+                                Start: startPoints, 
+                                End: endPoints, 
+                                Points:totalPoints});
                         },
                         failure: function(error) {
-                            console.log("Error 2");
+//                            console.log("Error 2");
                         }
                     });
                 },
                 failure: function(error) {
-                    console.log("Error");
+//                    console.log("Error");
                 }    
             });            
         },this);
@@ -189,13 +182,14 @@ Ext.define('CustomApp', {
     _createArrayStore: function() {
 
         if (this.newPointsStore) {
-            console.log('Clear records from store');
             this.newPointsStore.removeAll();
         } else {
             this.newPointsStore = new Ext.data.ArrayStore({
                 fields: [
                     'FormattedID',
                     'Name',
+                    'Start',
+                    'End',
                     'Points'
                 ]
             });
@@ -208,9 +202,11 @@ Ext.define('CustomApp', {
             this.pointsGrid = new Ext.grid.Panel({
                 store: this.newPointsStore,
                 columns: [
-                    {text: 'ID',     dataIndex: 'FormattedID'},       
-                    {text: 'Name',   dataIndex: 'Name',   flex:1},
-                    {text: 'Points', dataIndex: 'Points'}
+                    {text: 'ID',        dataIndex: 'FormattedID'},       
+                    {text: 'Name',      dataIndex: 'Name',   flex:1},
+                    {text: 'Start',     dataIndex: 'Start'},
+                    {text: 'End',       dataIndex: 'End'},
+                    {text: 'Points',    dataIndex: 'Points'}
                 ],
                 title: 'Portfolio Items - Points Completed',
                 renderTo: Ext.getBody()
