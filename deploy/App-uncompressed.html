@@ -219,62 +219,7 @@
 
 //        this.add(this.pointsGrid);
 //        }
-    },
-    
-    _addRecordToArrayStore: function(n, p) {
-        console.log('Add Record', n, p);
-
-        var data = _.map(n, p, function(name, points) {
-        return {
-            "Name" : name,
-            "Points" : points
-            };
-        });          
-
-        console.log(data);
-
-//        var data = new this.pointsRecord({
-//            name: n,
-//            points: p
-//        });
-
-//        this.pointsStore.add(data);
-    },
-    
-    _createArrayStore: function() {
-
-        if(!this.pointsStore) {
-
-//            this.pointsRecord = Ext.data.Record.create([
-//                {name: "Name", type: "string"},
-//                {name: "Points", type: "integer"}
-//            ]);    
-
-            var fields = [
-                {displayName: 'Name',   name: 'Name',   type: 'string'},
-                {displayName: 'Points', name: 'Points', type: 'integer'}
-            ];
-
-            this.pointsStore = Ext.create('Ext.data.JsonStore', {
-                fields: fields
-//                data : data
-            });
-        }
     }
-
-
-// convert records into a json data structure
-//    var data = _.map(records,function(r) {
-//        return {
-//            "FormattedID" :               
-//                r.get("ItemObject").get("FormattedID"),
-//            "Name" :      
-//                r.get("PointsObject").get("Name"),
-//            "Points" :   
-//                r.get("PointsObject").get("Points")
-//        };
-//    });
-//    }
 });
 
 
