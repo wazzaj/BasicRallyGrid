@@ -224,7 +224,7 @@ Ext.define('CustomApp', {
                 height: 600,
                 animate: true,
 //                autoSize: true,
-                autoScroll: true,
+//                autoScroll: true,
                 store: this.newPointsStore,
                 renderTo: Ext.getBody(),
                 shadow: true,
